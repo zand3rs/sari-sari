@@ -1,0 +1,92 @@
+#
+# Installation
+#
+# $ ./configure --with-http_gzip_static_module --with-http_ssl_module --add-module=../ngx_devel_kit-0.2.19 --add-module=../set-misc-nginx-module-0.29 --add-module=../echo-nginx-module-0.58
+# $ make -j2
+# $ sudo make install
+#
+# *** Proxy settings for nginx version up to 1.7.9 ***
+#
+
+#user  nobody;
+worker_processes      auto; # should be number of CPUs
+worker_rlimit_nofile  1024; # max file handles, 65k?
+
+#error_log  logs/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+#pid        logs/nginx.pid;
+
+events {
+    worker_connections  1024; # worker_rlimit_nofile / worker_processes
+}
+
+
+http {
+    include            mime.types;
+    default_type       application/octet-stream;
+
+    access_log         off;
+    keepalive_timeout  20s; # default is 75s but they say 10-20s is recommended
+    sendfile           on;
+
+    proxy_cache_path  /usr/local/nginx/proxy_cache levels=1:2 keys_zone=s3_assets:10m inactive=24h max_size=1g;
+    proxy_temp_path   /usr/local/nginx/proxy_temp;
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        location ~ /((javascripts|js|stylesheets|styles|css|images|fonts)/|favicon) {
+            resolver        8.8.8.8;
+            proxy_redirect  off;
+
+            gzip_static  on;
+            expires      max;
+            add_header   Access-Control-Allow-Origin *;
+            add_header   Pragma public;
+            add_header   Cache-Control public;
+
+            set $request_url $uri;
+            if ($http_accept_encoding ~* gzip) {
+                set $request_url "${request_url}.gz";
+            }
+
+            rewrite                ^ $request_url break;
+            proxy_pass             http://voyager-assets.s3.amazonaws.com;
+            proxy_cache            s3_assets;
+            proxy_cache_key        "${request_uri}:${http_accept_encoding}";
+            proxy_cache_valid      200 30d;
+            proxy_cache_use_stale  error timeout invalid_header updating
+                                   http_500 http_502 http_503 http_504
+                                   http_403 http_404;
+        }
+
+        location / {
+            deny all;
+        }
+    }
+
+    # HTTPS server
+    #
+    #server {
+    #    listen       443 ssl;
+    #    server_name  localhost;
+
+    #    ssl_certificate      cert.pem;
+    #    ssl_certificate_key  cert.key;
+
+    #    ssl_session_cache    shared:SSL:1m;
+    #    ssl_session_timeout  5m;
+
+    #    ssl_ciphers  HIGH:!aNULL:!MD5;
+    #    ssl_prefer_server_ciphers  on;
+
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+
+}

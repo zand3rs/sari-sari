@@ -1,0 +1,94 @@
+#
+# Installation
+#
+# $ ./configure --with-http_gzip_static_module --with-http_ssl_module --add-module=../ngx_devel_kit-0.2.19 --add-module=../set-misc-nginx-module-0.26
+# $ make -j2
+# $ sudo make install
+#
+
+#user  nobody;
+worker_processes  1;
+
+#error_log  logs/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+#pid        logs/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    access_log         off;
+    keepalive_timeout  0;
+    sendfile           on;
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        location ~ ^/((javascripts|js|stylesheets|styles|css|images|fonts)/|favicon) {
+            gzip_static on;
+            expires     max;
+            add_header  Access-Control-Allow-Origin "*";
+            add_header  Cache-Control "public";
+            add_header  Last-Modified "";
+            add_header  ETag "";
+        }
+
+        location ~ ^/(?<req_domain>[^/]+)(?<req_uri>/.+$) {
+            resolver          8.8.8.8;
+            proxy_redirect    off;
+            proxy_set_header  X-Forwarded-For $remote_addr;
+
+            if ($args ~ ^((.*)&)?sig=(?<req_sig>[^&]+)$) {
+                set $args $2;
+            }
+
+            set $secret_key "suma-tonetto";
+            set $string_to_sign "$req_domain$req_uri$is_args$args";
+
+            set_hmac_sha1 $signature $secret_key $string_to_sign;
+            set_encode_hex $signature $signature;
+
+            if ($req_sig != $signature) {
+                return 403;
+            }
+
+            rewrite          ^ $req_uri break;
+            proxy_pass       http://$req_domain;
+        }
+
+        location / {
+            deny all;
+        }
+    }
+
+    # HTTPS server
+    #
+    #server {
+    #    listen       443 ssl;
+    #    server_name  localhost;
+
+    #    ssl_certificate      cert.pem;
+    #    ssl_certificate_key  cert.key;
+
+    #    ssl_session_cache    shared:SSL:1m;
+    #    ssl_session_timeout  5m;
+
+    #    ssl_ciphers  HIGH:!aNULL:!MD5;
+    #    ssl_prefer_server_ciphers  on;
+
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+
+}
