@@ -43,7 +43,7 @@ http {
     gzip_disable          msie6;
     gzip_http_version     1.0;
 
-    image_filter_buffer   8M;
+    image_filter_buffer   8m;
 
     proxy_cache_path      /usr/local/nginx/proxy_cache levels=1:2 keys_zone=s3_assets:10m
                           inactive=24h max_size=1g use_temp_path=off;
