@@ -9,6 +9,6 @@ tar -xzvf ngx_devel_kit-0.2.19.tar.gz
 tar -xzvf set-misc-nginx-module-0.29.tar.gz
 tar -xzvf echo-nginx-module-0.58.tar.gz
 cd nginx-1.9.3/
-./configure --with-http_gzip_static_module --with-http_ssl_module --add-module=../ngx_devel_kit-0.2.19 --add-module=../set-misc-nginx-module-0.29 --add-module=../echo-nginx-module-0.58
+./configure --with-http_gzip_static_module --with-http_ssl_module --with-http_image_filter_module --add-module=../ngx_devel_kit-0.2.19 --add-module=../set-misc-nginx-module-0.29 --add-module=../echo-nginx-module-0.58
 make -j2
 sudo make install
