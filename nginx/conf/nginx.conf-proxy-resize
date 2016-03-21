@@ -9,8 +9,8 @@
 #
 
 #user  nobody;
-worker_processes      auto; # should be number of CPUs
-worker_rlimit_nofile  1024; # max file handles, 65k?
+worker_processes     auto; # should be number of CPUs
+worker_rlimit_nofile 1024; # max file handles, 65k?
 
 #error_log  logs/error.log;
 #error_log  logs/error.log  notice;
@@ -19,53 +19,55 @@ worker_rlimit_nofile  1024; # max file handles, 65k?
 #pid        logs/nginx.pid;
 
 events {
-    worker_connections  1024; # worker_rlimit_nofile / worker_processes
+    worker_connections 1024; # worker_rlimit_nofile / worker_processes
 }
 
 
 http {
-    include            mime.types;
-    default_type       application/octet-stream;
+    include               mime.types;
+    default_type          application/octet-stream;
 
-    access_log         off;
-    keepalive_timeout  20s; # default is 75s but they say 10-20s is recommended
-    sendfile           on;
-    server_tokens      off;
-    expires            max;
-    resolver           8.8.8.8;
+    access_log            off;
+    keepalive_timeout     20s; # default is 75s but they say 10-20s is recommended
+    sendfile              on;
+    server_tokens         off;
+    expires               max;
+    resolver              8.8.8.8;
 
-    gzip               on;
-    gzip_static        on;
-    gzip_vary          on;
-    gzip_comp_level    9;
-    gzip_types         *;
-    gzip_proxied       any;
-    gzip_disable       msie6;
-    gzip_http_version  1.0;
+    gzip                  on;
+    gzip_static           on;
+    gzip_vary             on;
+    gzip_comp_level       9;
+    gzip_types            *;
+    gzip_proxied          any;
+    gzip_disable          msie6;
+    gzip_http_version     1.0;
 
-    proxy_cache_path       /usr/local/nginx/proxy_cache levels=1:2 keys_zone=s3_assets:10m
-                           inactive=24h max_size=1g use_temp_path=off;
-    proxy_cache            s3_assets;
-    proxy_cache_valid      30d;
-    proxy_cache_lock       on;
-    proxy_cache_use_stale  error timeout invalid_header updating
-                           http_500 http_502 http_503 http_504
-                           http_403 http_404;
+    image_filter_buffer   8M;
 
-    proxy_redirect         off;
-    proxy_hide_header      x-amz-id-2;
-    proxy_hide_header      x-amz-request-id;
-    proxy_hide_header      x-amz-meta-s3cmd-attrs;
+    proxy_cache_path      /usr/local/nginx/proxy_cache levels=1:2 keys_zone=s3_assets:10m
+                          inactive=24h max_size=1g use_temp_path=off;
+    proxy_cache           s3_assets;
+    proxy_cache_valid     30d;
+    proxy_cache_lock      on;
+    proxy_cache_use_stale error timeout invalid_header updating
+                          http_500 http_502 http_503 http_504
+                          http_403 http_404;
 
-    add_header             Access-Control-Allow-Origin *;
-    add_header             Cache-Control public;
-    add_header             Pragma public;
+    proxy_redirect        off;
+    proxy_hide_header     x-amz-id-2;
+    proxy_hide_header     x-amz-request-id;
+    proxy_hide_header     x-amz-meta-s3cmd-attrs;
+
+    add_header            Access-Control-Allow-Origin *;
+    add_header            Cache-Control public;
+    add_header            Pragma public;
 
     server {
-        listen             80;
-        server_name        localhost;
+        listen            80;
+        server_name       localhost;
 
-        set $s3_bucket     http://voyager-assets.s3.amazonaws.com;
+        set $s3_bucket    http://voyager-assets.s3.amazonaws.com;
 
         location ~* ^/((?!p/)(?!r/).+\.(gif|jpe?g|png))$ {
             set $req_uri $1;
