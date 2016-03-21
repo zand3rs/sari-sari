@@ -1,0 +1,56 @@
+## Central Assets Config
+worker_processes       4; # should be number of CPUs
+worker_rlimit_nofile   350000; # max file handles, 65k?
+
+events {
+    worker_connections 87500; # worker_rlimit_nofile / worker_processes
+}
+
+http {
+    include            mime.types;
+    default_type       application/octet-stream;
+
+    access_log         off;
+    keepalive_timeout  20s; # default is 75s but they say 10-20s is recommended
+    sendfile           on;
+
+    proxy_cache_path   /etc/nginx/proxy_cache levels=1:2 keys_zone=s3_assets:32m
+                       inactive=24h max_size=10g;
+
+    gzip               on;
+    gzip_static        on;
+    gzip_vary          on;
+    gzip_comp_level    9;
+    gzip_types         *;
+    gzip_proxied       any;
+    gzip_disable       msie6;
+    gzip_http_version  1.0;
+
+    server {
+        listen       80;
+        server_name  central-assets.voyager.ph;
+
+        location ~ /((javascripts|js|stylesheets|styles|css|images|fonts|vtt|audio)/|favicon) {
+            resolver         172.0.0.2 valid=300s;
+            resolver_timeout 10s;
+            proxy_redirect   off;
+
+            expires         max;
+            add_header      Access-Control-Allow-Origin *;
+            add_header      Pragma public;
+            add_header      Cache-Control public;
+
+            proxy_pass             http://voyager-assets.s3-ap-southeast-1.amazonaws.com;
+            proxy_cache            s3_assets;
+            proxy_cache_valid      30d;
+            proxy_cache_lock       on;
+            proxy_cache_use_stale  error timeout invalid_header updating
+                                   http_500 http_502 http_503 http_504
+                                   http_403 http_404;
+        }
+
+        location / {
+            deny all;
+        }
+    }
+}
